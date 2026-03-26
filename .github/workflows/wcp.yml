@@ -1,4 +1,4 @@
-name: Build Winlator WCP Package
+name: Build Winlator WCP DXVK 2.0
 
 on:
   workflow_dispatch:
@@ -13,37 +13,30 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download DXVK
+      - name: Download Official DXVK 2.0
         run: |
           curl -L -o dxvk-2.0.tar.gz https://github.com/doitsujin/dxvk/releases/download/v2.0/dxvk-2.0.tar.gz
 
-      - name: Prepare Folder Structure
+      - name: Initialize Architecture
         run: |
-          mkdir -p workspace/"."
-          mv dxvk-2.0.tar.gz workspace/"."/
+          mkdir -p layer1/"."
+          mv dxvk-2.0.tar.gz layer1/"."/
+          if [ -f "profile.json" ]; then cp profile.json layer1/"."; fi
 
-      - name: First Archive
+      - name: Create Internal Archive
         run: |
-          cd workspace
-          tar -cvf stage1.tar .
-          mv stage1.tar dxvk_no_ext
+          cd layer1
+          tar -cvzf ../dxvk-v2.0-internal.tar.gz .
           cd ..
 
-      - name: Second Archive
+      - name: Create WCP Container
         run: |
-          cd workspace
-          tar -cvf stage2.tar dxvk_no_ext
-          cd ..
+          mkdir -p final_layer
+          mv dxvk-v2.0-internal.tar.gz final_layer/
+          tar -cJf DXVK-2.0.wcp -C final_layer dxvk-v2.0-internal.tar.gz
 
-      - name: Final Archive
-        run: |
-          cd workspace
-          tar -cJf final_package.tar.xz stage2.tar
-          mv final_package.tar.xz dxvk-sarek-leegao.wcp.xz
-          cd ..
-
-      - name: Upload Result
+      - name: Deploy Component
         uses: actions/upload-artifact@v4
         with:
-          name: Winlator-WCP-Package
-          path: workspace/dxvk-sarek-leegao.wcp.xz
+          name: DXVK-2.0-Package
+          path: DXVK-2.0.wcp
