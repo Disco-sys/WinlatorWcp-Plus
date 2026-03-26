@@ -20,12 +20,17 @@ jobs:
         run: |
           curl -L -o dxvk-2.0.tar.gz https://github.com/doitsujin/dxvk/releases/download/v2.0/dxvk-2.0.tar.gz
 
-      - name: Extract and Clean
+      - name: Extract and Structure
         run: |
           tar -xzvf dxvk-2.0.tar.gz
           mkdir -p workspace
-          mv x32 x64 workspace/
-          if [ -f "profile.json" ]; then cp profile.json workspace/; fi
+          
+          find . -type d -name "x32" -exec mv {} workspace/ \;
+          find . -type d -name "x64" -exec mv {} workspace/ \;
+          
+          if [ -f "profile.json" ]; then 
+            cp profile.json workspace/
+          fi
 
       - name: Create Layer 1 Archive
         run: |
