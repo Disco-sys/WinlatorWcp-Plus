@@ -1,4 +1,4 @@
-name: Build DXVK Sarek-Merged Async-WCP
+name: Build DXVK Sarek-Merged Deep-Extract
 
 on:
   workflow_dispatch:
@@ -16,29 +16,51 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download WCP Source Files
+      - name: Download Files
         run: |
-          curl -L -o sarek_64.wcp https://github.com/Arihany/WinlatorWCPHub/releases/download/DXVK-SAREK-ASYNC/dxvk-sarek-async-1.11.0.wcp
-          curl -L -o sporif_32.wcp https://github.com/StevenMXZ/Winlator-Contents/raw/main/DXVK/dxvk-1.10.3-async.wcp
+          curl -L -o sarek_64.archive "https://github.com/Arihany/WinlatorWCPHub/releases/download/DXVK-SAREK-ASYNC/dxvk-sarek-async-1.11.0.wcp"
+          curl -L -o sporif_32.archive "https://github.com/StevenMXZ/Winlator-Contents/raw/main/DXVK/dxvk-1.10.3-async.wcp"
 
-      - name: Extract and Hybrid Map
+      - name: Deep Extract 64-bit Sarek
         run: |
-          mkdir -p v64_temp v32_temp workspace
-          
-          unzip sarek_64.wcp -d v64_temp || 7z x sarek_64.wcp -ov64_temp
-          unzip sporif_32.wcp -d v32_temp || 7z x sporif_32.wcp -ov32_temp
-          
+          mkdir -p v64_temp
+          cp sarek_64.archive v64_temp/
+          cd v64_temp
+          # Extract anything and everything recursively
+          while [ -n "$(find . -maxdepth 1 -name "*.archive" -o -name "*.wcp" -o -name "*.tar.gz" -o -name "*.xz" -o -name "*.zip")" ]; do
+            find . -maxdepth 1 -type f | while read -r file; do
+              7z x "$file" -y || tar -xvf "$file" || unzip "$file" || true
+              rm "$file"
+            done
+          done
+          cd ..
+
+      - name: Deep Extract 32-bit Sporif
+        run: |
+          mkdir -p v32_temp
+          cp sporif_32.archive v32_temp/
+          cd v32_temp
+          while [ -n "$(find . -maxdepth 1 -name "*.archive" -o -name "*.wcp" -o -name "*.tar.gz" -o -name "*.xz" -o -name "*.zip")" ]; do
+            find . -maxdepth 1 -type f | while read -r file; do
+              7z x "$file" -y || tar -xvf "$file" || unzip "$file" || true
+              rm "$file"
+            done
+          done
+          cd ..
+
+      - name: Map Hybrid Workspace
+        run: |
           mkdir -p workspace/system32 workspace/syswow64
-          
-          cp -r v64_temp/system32/. workspace/system32/
-          cp -r v32_temp/syswow64/. workspace/syswow64/
+          # Find the actual DLL folders regardless of where they landed
+          cp -r $(find v64_temp -type d -name "system32" | head -n 1)/. workspace/system32/
+          cp -r $(find v32_temp -type d -name "syswow64" | head -n 1)/. workspace/syswow64/
           
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
             "versionName": "Sarek-Merged-Async",
-            "versionCode": 9,
-            "description": "64-bit Sarek 1.11.0 WCP | 32-bit Sporif 1.10.3 WCP",
+            "versionCode": 10,
+            "description": "64-bit Sarek 1.11.0 | 32-bit Sporif 1.10.3",
             "files": [
               { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
               { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
@@ -52,12 +74,12 @@ jobs:
           }
           EOF
 
-      - name: Create Merged WCP
+      - name: Create Final WCP
         run: |
           tar -cJf DXVK-Sarek-Merged-Async.wcp.xz -C workspace .
 
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Sarek-Merged-WCP-Package
+          name: Sarek-Merged-Final
           path: DXVK-Sarek-Merged-Async.wcp.xz
