@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Download Official DXVK 2.0
         run: |
@@ -36,7 +36,8 @@ jobs:
           tar -cJf DXVK-2.0.wcp -C final_layer dxvk-v2.0-internal.tar.gz
 
       - name: Deploy Component
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
+          name: DXVK-2.0-WCP
           path: DXVK-2.0.wcp
-          archive: false
+          if-no-files-found: error
