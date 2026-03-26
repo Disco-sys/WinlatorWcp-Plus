@@ -1,1 +1,49 @@
+name: Build Winlator WCP Package
 
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download DXVK
+        run: |
+          curl -L -o dxvk-2.0.tar.gz https://github.com/doitsujin/dxvk/releases/download/v2.0/dxvk-2.0.tar.gz
+
+      - name: Prepare Folder Structure
+        run: |
+          mkdir -p workspace/"."
+          mv dxvk-2.0.tar.gz workspace/"."/
+
+      - name: First Archive
+        run: |
+          cd workspace
+          tar -cvf stage1.tar .
+          mv stage1.tar dxvk_no_ext
+          cd ..
+
+      - name: Second Archive
+        run: |
+          cd workspace
+          tar -cvf stage2.tar dxvk_no_ext
+          cd ..
+
+      - name: Final Archive
+        run: |
+          cd workspace
+          tar -cJf final_package.tar.xz stage2.tar
+          mv final_package.tar.xz dxvk-sarek-leegao.wcp.xz
+          cd ..
+
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: Winlator-WCP-Package
+          path: workspace/dxvk-sarek-leegao.wcp.xz
