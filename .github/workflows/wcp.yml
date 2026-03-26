@@ -1,4 +1,4 @@
-name: Build DXVK Sarek-Merged Deep-Extract
+name: Build DXVK Sarek-Merged Double-Extract
 
 on:
   workflow_dispatch:
@@ -16,50 +16,42 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Files
+      - name: Download WCP Files
         run: |
-          curl -L -o sarek_64.archive "https://github.com/Arihany/WinlatorWCPHub/releases/download/DXVK-SAREK-ASYNC/dxvk-sarek-async-1.11.0.wcp"
-          curl -L -o sporif_32.archive "https://github.com/StevenMXZ/Winlator-Contents/raw/main/DXVK/dxvk-1.10.3-async.wcp"
+          curl -L -o sarek_64.wcp "https://github.com/Arihany/WinlatorWCPHub/releases/download/DXVK-SAREK-ASYNC/dxvk-sarek-async-1.11.0.wcp"
+          curl -L -o sporif_32.wcp "https://github.com/StevenMXZ/Winlator-Contents/raw/main/DXVK/dxvk-1.10.3-async.wcp"
 
-      - name: Deep Extract 64-bit Sarek
+      - name: Double Extract 64-bit Sarek
         run: |
-          mkdir -p v64_temp
-          cp sarek_64.archive v64_temp/
-          cd v64_temp
-          # Extract anything and everything recursively
-          while [ -n "$(find . -maxdepth 1 -name "*.archive" -o -name "*.wcp" -o -name "*.tar.gz" -o -name "*.xz" -o -name "*.zip")" ]; do
-            find . -maxdepth 1 -type f | while read -r file; do
-              7z x "$file" -y || tar -xvf "$file" || unzip "$file" || true
-              rm "$file"
-            done
-          done
-          cd ..
-
-      - name: Deep Extract 32-bit Sporif
-        run: |
-          mkdir -p v32_temp
-          cp sporif_32.archive v32_temp/
-          cd v32_temp
-          while [ -n "$(find . -maxdepth 1 -name "*.archive" -o -name "*.wcp" -o -name "*.tar.gz" -o -name "*.xz" -o -name "*.zip")" ]; do
-            find . -maxdepth 1 -type f | while read -r file; do
-              7z x "$file" -y || tar -xvf "$file" || unzip "$file" || true
-              rm "$file"
-            done
-          done
-          cd ..
-
-      - name: Map Hybrid Workspace
-        run: |
-          mkdir -p workspace/system32 workspace/syswow64
-          # Find the actual DLL folders regardless of where they landed
-          cp -r $(find v64_temp -type d -name "system32" | head -n 1)/. workspace/system32/
-          cp -r $(find v32_temp -type d -name "syswow64" | head -n 1)/. workspace/syswow64/
+          mkdir -p v64_layer1 v64_layer2
+          7z x sarek_64.wcp -ov64_layer1 -y
           
+          # Find the nested archive in Layer 1 and extract to Layer 2
+          find v64_layer1 -type f \( -name "*.wcp" -o -name "*.zip" -o -name "*.tar.xz" \) -exec 7z x {} -ov64_layer2 -y \;
+          
+          # Handle the "." or nested folder structure
+          mkdir -p workspace/system32
+          cp -r $(find v64_layer2 -type d -name "system32" | head -n 1)/. workspace/system32/
+
+      - name: Double Extract 32-bit Sporif
+        run: |
+          mkdir -p v32_layer1 v32_layer2
+          7z x sporif_32.wcp -ov32_layer1 -y
+          
+          # Find the nested archive in Layer 1 and extract to Layer 2
+          find v32_layer1 -type f \( -name "*.wcp" -o -name "*.zip" -o -name "*.tar.xz" \) -exec 7z x {} -ov32_layer2 -y \;
+          
+          # Handle the "." or nested folder structure
+          mkdir -p workspace/syswow64
+          cp -r $(find v32_layer2 -type d -name "syswow64" | head -n 1)/. workspace/syswow64/
+
+      - name: Create Hybrid Profile
+        run: |
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
             "versionName": "Sarek-Merged-Async",
-            "versionCode": 10,
+            "versionCode": 11,
             "description": "64-bit Sarek 1.11.0 | 32-bit Sporif 1.10.3",
             "files": [
               { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
@@ -81,5 +73,5 @@ jobs:
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Sarek-Merged-Final
+          name: Sarek-Merged-Async-Final
           path: DXVK-Sarek-Merged-Async.wcp.xz
