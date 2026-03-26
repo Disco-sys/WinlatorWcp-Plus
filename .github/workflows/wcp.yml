@@ -83,12 +83,10 @@ jobs:
 
       - name: Create Final WCP Container
         run: |
-          mkdir -p deploy
-          mv DXVK-2.0 deploy/
-          tar -cJf DXVK-2.0.wcp.xz -C deploy DXVK-2.0
+          tar -cJf DXVK-2.0.wcp DXVK-2.0
 
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DXVK-2.0-Package
-          path: DXVK-2.0.wcp.xz
+          name: DXVK-2.0-Direct
+          path: DXVK-2.0.wcp
