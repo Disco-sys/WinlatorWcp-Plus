@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   generate-package:
     runs-on: ubuntu-latest
@@ -19,13 +22,13 @@ jobs:
 
       - name: Initialize Architecture
         run: |
-          mkdir -p layer1/"."
-          mv dxvk-2.0.tar.gz layer1/"."/
-          if [ -f "profile.json" ]; then cp profile.json layer1/"."; fi
+          mkdir -p workspace
+          if [ -f "profile.json" ]; then cp profile.json workspace/; fi
+          mv dxvk-2.0.tar.gz workspace/
 
       - name: Create Internal Archive
         run: |
-          cd layer1
+          cd workspace
           tar -cvzf ../dxvk-v2.0-internal.tar.gz .
           cd ..
 
@@ -40,4 +43,3 @@ jobs:
         with:
           name: DXVK-2.0-WCP
           path: DXVK-2.0.wcp
-          if-no-files-found: error
