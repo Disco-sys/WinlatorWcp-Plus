@@ -20,26 +20,27 @@ jobs:
         run: |
           curl -L -o dxvk-2.0.tar.gz https://github.com/doitsujin/dxvk/releases/download/v2.0/dxvk-2.0.tar.gz
 
-      - name: Initialize Architecture
+      - name: Extract and Clean
         run: |
+          tar -xzvf dxvk-2.0.tar.gz
           mkdir -p workspace
+          mv x32 x64 workspace/
           if [ -f "profile.json" ]; then cp profile.json workspace/; fi
-          mv dxvk-2.0.tar.gz workspace/
 
-      - name: Create Internal Archive
+      - name: Create Layer 1 Archive
         run: |
           cd workspace
-          tar -cvzf ../dxvk-v2.0-internal.tar.gz .
+          tar -cvf ../DXVK-2.0 .
           cd ..
 
-      - name: Create WCP Container
+      - name: Create Final WCP Container
         run: |
-          mkdir -p final_layer
-          mv dxvk-v2.0-internal.tar.gz final_layer/
-          tar -cJf DXVK-2.0.wcp -C final_layer dxvk-v2.0-internal.tar.gz
+          mkdir -p deploy
+          mv DXVK-2.0 deploy/
+          tar -cJf DXVK-2.0.wcp.xz -C deploy DXVK-2.0
 
-      - name: Deploy Component
+      - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DXVK-2.0-WCP
-          path: DXVK-2.0.wcp
+          name: DXVK-2.0-Package
+          path: DXVK-2.0.wcp.xz
