@@ -1,89 +1,44 @@
-name: Build Winlator WCP DXVK 2.0
+name: Build DXVK-2.0 WCP for Winlator
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  generate-package:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download Official DXVK 2.0
+      - name: Prepare directories
         run: |
-          curl -L -o dxvk-2.0.tar.gz https://github.com/doitsujin/dxvk/releases/download/v2.0/dxvk-2.0.tar.gz
+          mkdir -p inner-content/system32
+          mkdir -p inner-content/syswow64
 
-      - name: Extract and Map Architecture
+      - name: Create inner DXVK-2.0.tar
         run: |
-          tar -xzvf dxvk-2.0.tar.gz
-          mkdir -p workspace
-          mv dxvk-2.0/x64 workspace/system32
-          mv dxvk-2.0/x32 workspace/syswow64
-          cat <<EOF > workspace/profile.json
-          {
-            "type": "DXVK",
-            "versionName": "2.0",
-            "versionCode": 1,
-            "description": "DXVK-2.0",
-            "files": [
-              {
-                "source": "system32/d3d9.dll",
-                "target": "\${system32}/d3d9.dll"
-              },
-              {
-                "source": "system32/d3d10core.dll",
-                "target": "\${system32}/d3d10core.dll"
-              },
-              {
-                "source": "system32/d3d11.dll",
-                "target": "\${system32}/d3d11.dll"
-              },
-              {
-                "source": "system32/dxgi.dll",
-                "target": "\${system32}/dxgi.dll"
-              },
-              {
-                "source": "syswow64/d3d8.dll",
-                "target": "\${syswow64}/d3d8.dll"
-              },
-              {
-                "source": "syswow64/d3d9.dll",
-                "target": "\${syswow64}/d3d9.dll"
-              },
-              {
-                "source": "syswow64/d3d10core.dll",
-                "target": "\${syswow64}/d3d10core.dll"
-              },
-              {
-                "source": "syswow64/d3d11.dll",
-                "target": "\${syswow64}/d3d11.dll"
-              },
-              {
-                "source": "syswow64/dxgi.dll",
-                "target": "\${syswow64}/dxgi.dll"
-              }
-            ]
-          }
-          EOF
+          cd inner-content
+          tar -cvf ../DXVK-2.0.tar .
+          cd ..
+          tar -tf DXVK-2.0.tar | head -20
 
-      - name: Create Layer 1 (Flat Tar)
+      - name: Create outer DXVK-2.0.wcp.xz
         run: |
-          tar -cvf DXVK-2.0 -C workspace .
+          tar -cJf DXVK-2.0.tar.xz DXVK-2.0.tar
+          mv DXVK-2.0.tar.xz DXVK-2.0.wcp.xz
+          tar -tf DXVK-2.0.wcp.xz
 
-      - name: Create Layer 2 (Final WCP)
-        run: |
-          tar -cJf DXVK-2.0.wcp.xz DXVK-2.0
-
-      - name: Deploy Artifact
+      - name: Upload DXVK-2.0.wcp.xz artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DXVK-2.0.wcp.xz
+          name: DXVK-2.0-wcp
           path: DXVK-2.0.wcp.xz
-          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload DXVK-2.0.tar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXVK-2.0-tar
+          path: DXVK-2.0.tar
+          retention-days: 7
