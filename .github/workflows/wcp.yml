@@ -1,4 +1,4 @@
-name: Build Winlator WCP DXVK 2.0
+name: Build Winlator WCP DXVK-Async 2.0
 
 on:
   workflow_dispatch:
@@ -16,24 +16,24 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Official DXVK 2.0
+      - name: Download DXVK-Async 2.0
         run: |
-          curl -L -o dxvk-2.0.tar.gz https://github.com/doitsujin/dxvk/releases/download/v2.0/dxvk-2.0.tar.gz
+          curl -L -o dxvk-async-2.0.tar.gz https://github.com/Sporif/dxvk-async/releases/download/2.0/dxvk-async-2.0.tar.gz
 
       - name: Extract and Map Architecture
         run: |
-          tar -xzvf dxvk-2.0.tar.gz
+          tar -xzvf dxvk-async-2.0.tar.gz
           mkdir -p workspace
+          # Mapping Sporif's x64/x32 to Winlator's system32/syswow64
           mv dxvk-2.0/x64 workspace/system32
           mv dxvk-2.0/x32 workspace/syswow64
           
-          # Creating a clean profile.json that matches ONLY the files we actually have
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
-            "versionName": "2.0",
-            "versionCode": 1,
-            "description": "DXVK-2.0",
+            "versionName": "2.0-Async",
+            "versionCode": 2,
+            "description": "DXVK-2.0-Async-Sporif",
             "files": [
               { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
               { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
@@ -49,10 +49,10 @@ jobs:
 
       - name: Create Single Layer WCP
         run: |
-          tar -cJf DXVK-2.0.wcp.xz -C workspace .
+          tar -cJf DXVK-Async-2.0.wcp.xz -C workspace .
 
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DXVK-2.0-Final-Fixed
-          path: DXVK-2.0.wcp.xz
+          name: DXVK-Async-2.0-Final
+          path: DXVK-Async-2.0.wcp.xz
