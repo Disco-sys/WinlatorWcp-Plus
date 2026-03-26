@@ -18,15 +18,15 @@ jobs:
 
       - name: Download Components
         run: |
-          curl -L -o sarek_1.11.1_mali.tar.gz https://github.com/zeyadadev/DXVK-Sarek/releases/download/v1.11.1-mali-fix/dxvk-sarek-1.11.1.tar.gz
-          curl -L -o sarek_1.10.9_async.tar.gz https://github.com/pythonlover02/DXVK-Sarek/releases/download/1.10.9/dxvk-async-1.10.9.tar.gz
+          curl -L -o sarek_64.tar.gz "https://github.com/zeyadadev/DXVK-Sarek/releases/download/v1.11.1-mali-fix/dxvk-sarek-v1.11.1-mali-fix.tar.gz"
+          curl -L -o sarek_32.tar.gz "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.9/dxvk-sarek-async-v1.10.9.tar.gz"
 
       - name: Extract and Hybrid Map
         run: |
           mkdir -p v11_temp v10_temp workspace/system32 workspace/syswow64
           
-          tar -xzvf sarek_1.11.1_mali.tar.gz -C v11_temp
-          tar -xzvf sarek_1.10.9_async.tar.gz -C v10_temp
+          tar -xzvf sarek_64.tar.gz -C v11_temp
+          tar -xzvf sarek_32.tar.gz -C v10_temp
           
           cp -r $(find v11_temp -type d -name "x64" | head -n 1)/. workspace/system32/
           cp -r $(find v10_temp -type d -name "x32" | head -n 1)/. workspace/syswow64/
@@ -35,8 +35,8 @@ jobs:
           {
             "type": "DXVK",
             "versionName": "Sarek-Merged-Mali",
-            "versionCode": 12,
-            "description": "64-bit Sarek 1.11.1 Mali-Fix | 32-bit Sarek 1.10.9 Async",
+            "versionCode": 1,
+            "description": "64-bit v1.11.1 Mali-Fix | 32-bit v1.10.9 Sarek-Async",
             "files": [
               { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
               { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
