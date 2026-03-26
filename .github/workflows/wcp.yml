@@ -25,8 +25,8 @@ jobs:
           tar -xzvf dxvk-2.0.tar.gz
           mkdir -p workspace
           
-          find . -type d -name "x32" -exec mv {} workspace/ \;
-          find . -type d -name "x64" -exec mv {} workspace/ \;
+          mv dxvk-2.0/x32 workspace/
+          mv dxvk-2.0/x64 workspace/
           
           if [ -f "profile.json" ]; then 
             cp profile.json workspace/
