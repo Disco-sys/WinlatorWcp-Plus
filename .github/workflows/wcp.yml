@@ -1,4 +1,4 @@
-name: Build Winlator WCP DXVK-Async 2.0
+name: Build DXVK Sarek-Merged Async
 
 on:
   workflow_dispatch:
@@ -10,31 +10,35 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  generate-package:
+  build-merged-async:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download DXVK-Async 2.0
+      - name: Download Sarek 1.11.0 Async
         run: |
-          curl -L -o dxvk-async-2.0.tar.gz https://github.com/Sporif/dxvk-async/releases/download/2.0/dxvk-async-2.0.tar.gz
+          curl -L -o sarek_1.11.0_async.tar.gz https://github.com/pythonlover02/DXVK-Sarek/releases/download/1.11.0/dxvk-async-1.11.0.tar.gz
 
-      - name: Extract and Map Architecture
+      - name: Download Sporif 1.10.3 Async
         run: |
-          tar -xzvf dxvk-async-2.0.tar.gz
-          mkdir -p workspace
+          curl -L -o dxvk_1.10.3_async.tar.gz https://github.com/Sporif/dxvk-async/releases/download/1.10.3/dxvk-async-1.10.3.tar.gz
+
+      - name: Extract and Hybrid Map
+        run: |
+          mkdir -p v11_async_temp v10_async_temp workspace
+          tar -xzvf sarek_1.11.0_async.tar.gz -C v11_async_temp
+          tar -xzvf dxvk_1.10.3_async.tar.gz -C v10_async_temp
           
-          # FIXED: Now pointing to dxvk-async-2.0 folder instead of dxvk-2.0
-          mv dxvk-async-2.0/x64 workspace/system32
-          mv dxvk-async-2.0/x32 workspace/syswow64
+          mv v11_async_temp/dxvk-1.11.0/x64 workspace/system32
+          mv v10_async_temp/dxvk-async-1.10.3/x32 workspace/syswow64
           
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
-            "versionName": "2.0-Async",
-            "versionCode": 2,
-            "description": "DXVK-2.0-Async-Sporif",
+            "versionName": "Sarek-Merged-Async",
+            "versionCode": 6,
+            "description": "64-bit Sarek 1.11.0 Async | 32-bit Sporif 1.10.3 Async",
             "files": [
               { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
               { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
@@ -48,12 +52,12 @@ jobs:
           }
           EOF
 
-      - name: Create Single Layer WCP
+      - name: Create Merged WCP
         run: |
-          tar -cJf DXVK-Async-2.0.wcp.xz -C workspace .
+          tar -cJf DXVK-Sarek-Merged-Async.wcp.xz -C workspace .
 
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DXVK-Async-2.0-Final
-          path: DXVK-Async-2.0.wcp.xz
+          name: Sarek-Merged-Async-Package
+          path: DXVK-Sarek-Merged-Async.wcp.xz
