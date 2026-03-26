@@ -24,10 +24,8 @@ jobs:
         run: |
           tar -xzvf dxvk-2.0.tar.gz
           mkdir -p workspace
-          
           mv dxvk-2.0/x64 workspace/system32
           mv dxvk-2.0/x32 workspace/syswow64
-          
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
@@ -75,18 +73,17 @@ jobs:
           }
           EOF
 
-      - name: Create Layer 1 Archive
+      - name: Create Layer 1 (Flat Tar)
         run: |
-          cd workspace
-          tar -cvf ../DXVK-2.0 .
-          cd ..
+          tar -cvf DXVK-2.0 -C workspace .
 
-      - name: Create Final WCP Container
+      - name: Create Layer 2 (Final WCP)
         run: |
-          tar -cJf DXVK-2.0.wcp DXVK-2.0
+          tar -cJf DXVK-2.0.wcp.xz DXVK-2.0
 
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DXVK-2.0-Direct
-          path: DXVK-2.0.wcp
+          name: DXVK-2.0.wcp.xz
+          path: DXVK-2.0.wcp.xz
+          if-no-files-found: error
