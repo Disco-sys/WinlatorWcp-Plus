@@ -24,9 +24,10 @@ jobs:
         run: |
           tar -xzvf dxvk-async-2.0.tar.gz
           mkdir -p workspace
-          # Mapping Sporif's x64/x32 to Winlator's system32/syswow64
-          mv dxvk-2.0/x64 workspace/system32
-          mv dxvk-2.0/x32 workspace/syswow64
+          
+          # FIXED: Now pointing to dxvk-async-2.0 folder instead of dxvk-2.0
+          mv dxvk-async-2.0/x64 workspace/system32
+          mv dxvk-async-2.0/x32 workspace/syswow64
           
           cat <<EOF > workspace/profile.json
           {
