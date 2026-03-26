@@ -35,7 +35,7 @@ jobs:
           {
             "type": "DXVK",
             "versionName": "Sarek-Merged-Mali",
-            "versionCode": 2,
+            "versionCode": 12,
             "description": "64-bit Sarek 1.11.1 Mali-Fix | 32-bit Sarek 1.10.9 Async",
             "files": [
               { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
