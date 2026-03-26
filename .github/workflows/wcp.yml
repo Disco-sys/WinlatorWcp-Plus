@@ -26,6 +26,8 @@ jobs:
           mkdir -p workspace
           mv dxvk-2.0/x64 workspace/system32
           mv dxvk-2.0/x32 workspace/syswow64
+          
+          # Creating a clean profile.json that matches ONLY the files we actually have
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
@@ -33,42 +35,14 @@ jobs:
             "versionCode": 1,
             "description": "DXVK-2.0",
             "files": [
-              {
-                "source": "system32/d3d9.dll",
-                "target": "\${system32}/d3d9.dll"
-              },
-              {
-                "source": "system32/d3d10core.dll",
-                "target": "\${system32}/d3d10core.dll"
-              },
-              {
-                "source": "system32/d3d11.dll",
-                "target": "\${system32}/d3d11.dll"
-              },
-              {
-                "source": "system32/dxgi.dll",
-                "target": "\${system32}/dxgi.dll"
-              },
-              {
-                "source": "syswow64/d3d8.dll",
-                "target": "\${syswow64}/d3d8.dll"
-              },
-              {
-                "source": "syswow64/d3d9.dll",
-                "target": "\${syswow64}/d3d9.dll"
-              },
-              {
-                "source": "syswow64/d3d10core.dll",
-                "target": "\${syswow64}/d3d10core.dll"
-              },
-              {
-                "source": "syswow64/d3d11.dll",
-                "target": "\${syswow64}/d3d11.dll"
-              },
-              {
-                "source": "syswow64/dxgi.dll",
-                "target": "\${syswow64}/dxgi.dll"
-              }
+              { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
+              { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
+              { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
+              { "source": "system32/dxgi.dll", "target": "\${system32}/dxgi.dll" },
+              { "source": "syswow64/d3d9.dll", "target": "\${syswow64}/d3d9.dll" },
+              { "source": "syswow64/d3d10core.dll", "target": "\${syswow64}/d3d10core.dll" },
+              { "source": "syswow64/d3d11.dll", "target": "\${syswow64}/d3d11.dll" },
+              { "source": "syswow64/dxgi.dll", "target": "\${syswow64}/dxgi.dll" }
             ]
           }
           EOF
@@ -80,5 +54,5 @@ jobs:
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DXVK-2.0-SingleLayer
+          name: DXVK-2.0-Final-Fixed
           path: DXVK-2.0.wcp.xz
