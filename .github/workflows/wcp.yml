@@ -20,17 +20,60 @@ jobs:
         run: |
           curl -L -o dxvk-2.0.tar.gz https://github.com/doitsujin/dxvk/releases/download/v2.0/dxvk-2.0.tar.gz
 
-      - name: Extract and Structure
+      - name: Extract and Map Architecture
         run: |
           tar -xzvf dxvk-2.0.tar.gz
           mkdir -p workspace
           
-          mv dxvk-2.0/x32 workspace/
-          mv dxvk-2.0/x64 workspace/
+          mv dxvk-2.0/x64 workspace/system32
+          mv dxvk-2.0/x32 workspace/syswow64
           
-          if [ -f "profile.json" ]; then 
-            cp profile.json workspace/
-          fi
+          cat <<EOF > workspace/profile.json
+          {
+            "type": "DXVK",
+            "versionName": "2.0",
+            "versionCode": 1,
+            "description": "DXVK-2.0",
+            "files": [
+              {
+                "source": "system32/d3d9.dll",
+                "target": "\${system32}/d3d9.dll"
+              },
+              {
+                "source": "system32/d3d10core.dll",
+                "target": "\${system32}/d3d10core.dll"
+              },
+              {
+                "source": "system32/d3d11.dll",
+                "target": "\${system32}/d3d11.dll"
+              },
+              {
+                "source": "system32/dxgi.dll",
+                "target": "\${system32}/dxgi.dll"
+              },
+              {
+                "source": "syswow64/d3d8.dll",
+                "target": "\${syswow64}/d3d8.dll"
+              },
+              {
+                "source": "syswow64/d3d9.dll",
+                "target": "\${syswow64}/d3d9.dll"
+              },
+              {
+                "source": "syswow64/d3d10core.dll",
+                "target": "\${syswow64}/d3d10core.dll"
+              },
+              {
+                "source": "syswow64/d3d11.dll",
+                "target": "\${syswow64}/d3d11.dll"
+              },
+              {
+                "source": "syswow64/dxgi.dll",
+                "target": "\${syswow64}/dxgi.dll"
+              }
+            ]
+          }
+          EOF
 
       - name: Create Layer 1 Archive
         run: |
