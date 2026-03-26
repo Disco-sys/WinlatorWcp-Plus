@@ -40,3 +40,4 @@ jobs:
         with:
           name: DXVK-2.0-Package
           path: DXVK-2.0.wcp
+          compression-level: 0
