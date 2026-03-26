@@ -23,7 +23,7 @@ jobs:
           cd ..
           tar -tf DXVK-2.0.tar | head -20
 
-      - name: Create outer DXVK-2.0.wcp.xz
+      - name: Create outer DXVK-2.0.wcp.xz containing only the tar
         run: |
           tar -cJf DXVK-2.0.tar.xz DXVK-2.0.tar
           mv DXVK-2.0.tar.xz DXVK-2.0.wcp.xz
