@@ -1,4 +1,4 @@
-name: Build DXVK Sarek-Merged Double-Extract
+name: Build DXVK Sarek-Merged Mali-Fix
 
 on:
   workflow_dispatch:
@@ -10,49 +10,33 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-merged-async:
+  build-merged-mali:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download WCP Files
+      - name: Download Components
         run: |
-          curl -L -o sarek_64.wcp "https://github.com/Arihany/WinlatorWCPHub/releases/download/DXVK-SAREK-ASYNC/dxvk-sarek-async-1.11.0.wcp"
-          curl -L -o sporif_32.wcp "https://github.com/StevenMXZ/Winlator-Contents/raw/main/DXVK/dxvk-1.10.3-async.wcp"
+          curl -L -o sarek_1.11.1_mali.tar.gz https://github.com/zeyadadev/DXVK-Sarek/releases/download/v1.11.1-mali-fix/dxvk-sarek-1.11.1.tar.gz
+          curl -L -o sarek_1.10.9_async.tar.gz https://github.com/pythonlover02/DXVK-Sarek/releases/download/1.10.9/dxvk-async-1.10.9.tar.gz
 
-      - name: Double Extract 64-bit Sarek
+      - name: Extract and Hybrid Map
         run: |
-          mkdir -p v64_layer1 v64_layer2
-          7z x sarek_64.wcp -ov64_layer1 -y
+          mkdir -p v11_temp v10_temp workspace/system32 workspace/syswow64
           
-          # Find the nested archive in Layer 1 and extract to Layer 2
-          find v64_layer1 -type f \( -name "*.wcp" -o -name "*.zip" -o -name "*.tar.xz" \) -exec 7z x {} -ov64_layer2 -y \;
+          tar -xzvf sarek_1.11.1_mali.tar.gz -C v11_temp
+          tar -xzvf sarek_1.10.9_async.tar.gz -C v10_temp
           
-          # Handle the "." or nested folder structure
-          mkdir -p workspace/system32
-          cp -r $(find v64_layer2 -type d -name "system32" | head -n 1)/. workspace/system32/
-
-      - name: Double Extract 32-bit Sporif
-        run: |
-          mkdir -p v32_layer1 v32_layer2
-          7z x sporif_32.wcp -ov32_layer1 -y
+          cp -r $(find v11_temp -type d -name "x64" | head -n 1)/. workspace/system32/
+          cp -r $(find v10_temp -type d -name "x32" | head -n 1)/. workspace/syswow64/
           
-          # Find the nested archive in Layer 1 and extract to Layer 2
-          find v32_layer1 -type f \( -name "*.wcp" -o -name "*.zip" -o -name "*.tar.xz" \) -exec 7z x {} -ov32_layer2 -y \;
-          
-          # Handle the "." or nested folder structure
-          mkdir -p workspace/syswow64
-          cp -r $(find v32_layer2 -type d -name "syswow64" | head -n 1)/. workspace/syswow64/
-
-      - name: Create Hybrid Profile
-        run: |
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
-            "versionName": "Sarek-Merged-Async",
-            "versionCode": 11,
-            "description": "64-bit Sarek 1.11.0 | 32-bit Sporif 1.10.3",
+            "versionName": "Sarek-Merged-Mali",
+            "versionCode": 2,
+            "description": "64-bit Sarek 1.11.1 Mali-Fix | 32-bit Sarek 1.10.9 Async",
             "files": [
               { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
               { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
@@ -66,12 +50,12 @@ jobs:
           }
           EOF
 
-      - name: Create Final WCP
+      - name: Create Merged WCP
         run: |
-          tar -cJf DXVK-Sarek-Merged-Async.wcp.xz -C workspace .
+          tar -cJf DXVK-Sarek-Merged-Mali.wcp.xz -C workspace .
 
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Sarek-Merged-Async-Final
-          path: DXVK-Sarek-Merged-Async.wcp.xz
+          name: Sarek-Merged-Mali-Build
+          path: DXVK-Sarek-Merged-Mali.wcp.xz
