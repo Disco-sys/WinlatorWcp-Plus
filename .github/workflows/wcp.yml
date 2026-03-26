@@ -1,4 +1,4 @@
-name: Build DXVK Sarek-Merged Async
+name: Build DXVK Sarek-Merged Async-WCP
 
 on:
   workflow_dispatch:
@@ -16,30 +16,29 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Sarek 1.11.0 Async
+      - name: Download WCP Source Files
         run: |
-          curl -L -o sarek_v11_async.tar.gz https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.11.0/dxvk-sarek-async-v1.11.0.tar.gz
-
-      - name: Download Sporif 1.10.3 Async
-        run: |
-          curl -L -o sporif_v10_async.tar.gz https://github.com/Sporif/dxvk-async/releases/download/1.10.3/dxvk-async-1.10.3.tar.gz
+          curl -L -o sarek_64.wcp https://github.com/Arihany/WinlatorWCPHub/releases/download/DXVK-SAREK-ASYNC/dxvk-sarek-async-1.11.0.wcp
+          curl -L -o sporif_32.wcp https://github.com/StevenMXZ/Winlator-Contents/raw/main/DXVK/dxvk-1.10.3-async.wcp
 
       - name: Extract and Hybrid Map
         run: |
-          mkdir -p v11_temp v10_temp workspace
+          mkdir -p v64_temp v32_temp workspace
           
-          tar -xzvf sarek_v11_async.tar.gz -C v11_temp
-          tar -xzvf sporif_v10_async.tar.gz -C v10_temp
+          unzip sarek_64.wcp -d v64_temp || 7z x sarek_64.wcp -ov64_temp
+          unzip sporif_32.wcp -d v32_temp || 7z x sporif_32.wcp -ov32_temp
           
-          mv v11_temp/dxvk-sarek-async-v1.11.0/x64 workspace/system32
-          mv v10_temp/dxvk-async-1.10.3/x32 workspace/syswow64
+          mkdir -p workspace/system32 workspace/syswow64
+          
+          cp -r v64_temp/system32/. workspace/system32/
+          cp -r v32_temp/syswow64/. workspace/syswow64/
           
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
             "versionName": "Sarek-Merged-Async",
-            "versionCode": 8,
-            "description": "64-bit Sarek 1.11.0 Async | 32-bit Sporif 1.10.3 Async",
+            "versionCode": 9,
+            "description": "64-bit Sarek 1.11.0 WCP | 32-bit Sporif 1.10.3 WCP",
             "files": [
               { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
               { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
@@ -60,5 +59,5 @@ jobs:
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Sarek-Merged-Async-Package
+          name: Sarek-Merged-WCP-Package
           path: DXVK-Sarek-Merged-Async.wcp.xz
