@@ -18,26 +18,27 @@ jobs:
 
       - name: Download Sarek 1.11.0 Async
         run: |
-          curl -L -o sarek_1.11.0_async.tar.gz https://github.com/pythonlover02/DXVK-Sarek/releases/download/1.11.0/dxvk-async-1.11.0.tar.gz
+          curl -L -o sarek_v11_async.tar.gz https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.11.0/dxvk-sarek-async-v1.11.0.tar.gz
 
       - name: Download Sporif 1.10.3 Async
         run: |
-          curl -L -o dxvk_1.10.3_async.tar.gz https://github.com/Sporif/dxvk-async/releases/download/1.10.3/dxvk-async-1.10.3.tar.gz
+          curl -L -o sporif_v10_async.tar.gz https://github.com/Sporif/dxvk-async/releases/download/1.10.3/dxvk-async-1.10.3.tar.gz
 
       - name: Extract and Hybrid Map
         run: |
-          mkdir -p v11_async_temp v10_async_temp workspace
-          tar -xzvf sarek_1.11.0_async.tar.gz -C v11_async_temp
-          tar -xzvf dxvk_1.10.3_async.tar.gz -C v10_async_temp
+          mkdir -p v11_temp v10_temp workspace
           
-          mv v11_async_temp/dxvk-1.11.0/x64 workspace/system32
-          mv v10_async_temp/dxvk-async-1.10.3/x32 workspace/syswow64
+          tar -xzvf sarek_v11_async.tar.gz -C v11_temp
+          tar -xzvf sporif_v10_async.tar.gz -C v10_temp
+          
+          mv v11_temp/dxvk-sarek-async-v1.11.0/x64 workspace/system32
+          mv v10_temp/dxvk-async-1.10.3/x32 workspace/syswow64
           
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
             "versionName": "Sarek-Merged-Async",
-            "versionCode": 6,
+            "versionCode": 8,
             "description": "64-bit Sarek 1.11.0 Async | 32-bit Sporif 1.10.3 Async",
             "files": [
               { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
