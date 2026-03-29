@@ -1,53 +1,45 @@
-name: Build Alot of DXVK Versions
+name: Build DXVK Collection 1.0 to 2.4
 
 on:
   workflow_dispatch:
 
 jobs:
-  bundle-dxvk:
+  bundle-dxvk-ultra:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Process All Versions
+      - name: Process DXVK Versions
         run: |
-          # Define the version list based on the requested pages
           VERSIONS=(
-            "2.3" "2.2" "2.1" "2.0" 
-            "1.10.3" "1.10.2" "1.10.1" "1.10" 
-            "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9" 
+            "2.4" "2.3.1" "2.3" "2.2" "2.1" "2.0"
+            "1.10.3" "1.10.2" "1.10.1" "1.10"
+            "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9"
             "1.8.1" "1.8" "1.7.3" "1.7.2" "1.7.1" "1.7"
             "1.6.1" "1.6" "1.5.5" "1.5.4" "1.5.1" "1.5"
-            "1.4.6" "1.4.5" "1.4.4" "1.3.4" "1.2.3" "1.1.1" "1.0.3"
-            "0.96" "0.95" "0.94" "0.93" "0.92" "0.91" "0.90"
-            "0.81" "0.80" "0.72" "0.71" "0.70" "0.61" "0.54"
-            "0.42" "0.31" "0.3"
+            "1.4.6" "1.4.5" "1.4.4" "1.3.4" "1.2.3" "1.1.1" "1.0.3" "1.0.2" "1.0.1" "1.0"
           )
 
-          mkdir -p final_zip
+          mkdir -p "DXVK 1.0-2.4"
           
           for VER in "${VERSIONS[@]}"; do
-            echo "Processing DXVK $VER..."
+            echo "Building DXVK $VER..."
             URL="https://github.com/doitsujin/dxvk/releases/download/v${VER}/dxvk-${VER}.tar.gz"
             
-            # Download and suppress errors if version tag is slightly different
-            curl -L -o "dxvk.tar.gz" "$URL" || continue
-            
-            mkdir -p "temp_$VER" "wcp_$VER/system32" "wcp_$VER/syswow64"
-            tar -xzvf dxvk.tar.gz -C "temp_$VER" || continue
+            if curl -L --fail -o "dxvk.tar.gz" "$URL"; then
+              mkdir -p "temp_$VER" "wcp_root/system32" "wcp_root/syswow64"
+              tar -xzvf dxvk.tar.gz -C "temp_$VER"
+              
+              cp -r $(find "temp_$VER" -type d -name "x64" | head -n 1)/. "wcp_root/system32/" 2>/dev/null || true
+              cp -r $(find "temp_$VER" -type d -name "x32" | head -n 1)/. "wcp_root/syswow64/" 2>/dev/null || true
 
-            # Map x64 to system32 and x32 to syswow64
-            cp -r $(find "temp_$VER" -type d -name "x64" | head -n 1)/. "wcp_$VER/system32/" 2>/dev/null || true
-            cp -r $(find "temp_$VER" -type d -name "x32" | head -n 1)/. "wcp_$VER/syswow64/" 2>/dev/null || true
-
-            # Generate profile.json for Winlator
-            cat <<EOF > "wcp_$VER/profile.json"
+              cat <<EOF > "wcp_root/profile.json"
           {
             "type": "DXVK",
-            "versionName": "DXVK-$VER-Legacy",
+            "versionName": "DXVK-$VER",
             "versionCode": ${VER//./},
-            "description": "Original DXVK $VER",
+            "description": "DXVK $VER for Bionic/Winlator",
             "files": [
               { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
               { "source": "system32/dxgi.dll", "target": "\${system32}/dxgi.dll" },
@@ -57,19 +49,20 @@ jobs:
           }
           EOF
 
-            # Package into .wcp.xz
-            tar -cJf "final_zip/DXVK-$VER.wcp.xz" -C "wcp_$VER" .
-            
-            # Cleanup for next version
-            rm -rf "temp_$VER" "wcp_$VER" dxvk.tar.gz
+              tar -cJf "DXVK 1.0-2.4/DXVK-$VER.wcp.xz" -C "wcp_root" .
+              
+              rm -rf "temp_$VER" "wcp_root" dxvk.tar.gz
+            else
+              echo "Skipping $VER (Download failed)"
+            fi
           done
 
-      - name: Create Final Zip
+      - name: Compress Ultra Zip
         run: |
-          zip -r "alot_of_dxvk_versions.zip" final_zip/
+          zip -9 -r "alot of dxvk versions.zip" "DXVK 1.0-2.4/"
 
-      - name: Upload Result
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: alot-of-dxvk-versions
-          path: alot_of_dxvk_versions.zip
+          name: DXVK-Collection-Ultra
+          path: alot of dxvk versions.zip
