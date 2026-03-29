@@ -1,4 +1,4 @@
-name: Build DXVK Sarek-Merged Mali-Fix
+name: Build DXVK Legacy 0.20
 
 on:
   workflow_dispatch:
@@ -10,52 +10,45 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-merged-mali:
+  build-legacy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Components
+      - name: Download DXVK 0.20
         run: |
-          curl -L -o sarek_64.tar.gz "https://github.com/zeyadadev/DXVK-Sarek/releases/download/v1.11.1-mali-fix/dxvk-sarek-v1.11.1-mali-fix.tar.gz"
-          curl -L -o sarek_32.tar.gz "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.9/dxvk-sarek-async-v1.10.9.tar.gz"
+          curl -L -o dxvk_0.20.tar.gz "https://github.com/doitsujin/dxvk/releases/download/v0.20/dxvk-0.20.tar.gz"
 
-      - name: Extract and Hybrid Map
+      - name: Extract and Map
         run: |
-          mkdir -p v11_temp v10_temp workspace/system32 workspace/syswow64
+          mkdir -p temp workspace/system32 workspace/syswow64
+          tar -xzvf dxvk_0.20.tar.gz -C temp
           
-          tar -xzvf sarek_64.tar.gz -C v11_temp
-          tar -xzvf sarek_32.tar.gz -C v10_temp
-          
-          cp -r $(find v11_temp -type d -name "x64" | head -n 1)/. workspace/system32/
-          cp -r $(find v10_temp -type d -name "x32" | head -n 1)/. workspace/syswow64/
+          cp -r $(find temp -type d -name "x64" | head -n 1)/. workspace/system32/
+          cp -r $(find temp -type d -name "x32" | head -n 1)/. workspace/syswow64/
           
           cat <<EOF > workspace/profile.json
           {
             "type": "DXVK",
-            "versionName": "Sarek-Merged-Mali",
-            "versionCode": 1,
-            "description": "64-bit v1.11.1 Mali-Fix | 32-bit v1.10.9 Sarek-Async",
+            "versionName": "DXVK-0.20-Legacy",
+            "versionCode": 20,
+            "description": "Legacy DXVK 0.20 for Mali Testing",
             "files": [
-              { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
-              { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
               { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
               { "source": "system32/dxgi.dll", "target": "\${system32}/dxgi.dll" },
-              { "source": "syswow64/d3d9.dll", "target": "\${syswow64}/d3d9.dll" },
-              { "source": "syswow64/d3d10core.dll", "target": "\${syswow64}/d3d10core.dll" },
               { "source": "syswow64/d3d11.dll", "target": "\${syswow64}/d3d11.dll" },
               { "source": "syswow64/dxgi.dll", "target": "\${syswow64}/dxgi.dll" }
             ]
           }
           EOF
 
-      - name: Create Merged WCP
+      - name: Create WCP
         run: |
-          tar -cJf DXVK-Sarek-Merged-Mali.wcp.xz -C workspace .
+          tar -cJf DXVK-0.20-Legacy.wcp.xz -C workspace .
 
       - name: Deploy Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Sarek-Merged-Mali-Build
-          path: DXVK-Sarek-Merged-Mali.wcp.xz
+          name: DXVK-0.20-Legacy-Package
+          path: DXVK-0.20-Legacy.wcp.xz
