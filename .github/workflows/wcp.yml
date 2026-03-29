@@ -1,45 +1,47 @@
-name: Build DXVK Collection 1.0 to 2.4
+name: Build DXVK Mali-Force Collection 1.7-1.10.3
 
 on:
   workflow_dispatch:
 
 jobs:
-  bundle-dxvk-ultra:
+  bundle-patched-dxvk:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Process DXVK Versions
+      - name: Setup
         run: |
-          VERSIONS=(
-            "2.4" "2.3.1" "2.3" "2.2" "2.1" "2.0"
-            "1.10.3" "1.10.2" "1.10.1" "1.10"
-            "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9"
-            "1.8.1" "1.8" "1.7.3" "1.7.2" "1.7.1" "1.7"
-            "1.6.1" "1.6" "1.5.5" "1.5.4" "1.5.1" "1.5"
-            "1.4.6" "1.4.5" "1.4.4" "1.3.4" "1.2.3" "1.1.1" "1.0.3" "1.0.2" "1.0.1" "1.0"
-          )
+          sudo apt-get update
+          sudo apt-get install -y meson mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 glslang-tools
 
-          mkdir -p "DXVK 1.0-2.4"
+      - name: Process
+        run: |
+          VERSIONS=("1.10.3" "1.10.2" "1.10.1" "1.10" "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9" "1.8.1" "1.8" "1.7.3" "1.7.2" "1.7.1" "1.7")
+          mkdir -p "DXVK 1.7-1.10.3 Patched"
           
           for VER in "${VERSIONS[@]}"; do
-            echo "Building DXVK $VER..."
-            URL="https://github.com/doitsujin/dxvk/releases/download/v${VER}/dxvk-${VER}.tar.gz"
+            git clone --recursive https://github.com/doitsujin/dxvk.git "src_$VER"
+            cd "src_$VER"
+            git checkout "v$VER"
             
-            if curl -L --fail -o "dxvk.tar.gz" "$URL"; then
-              mkdir -p "temp_$VER" "wcp_root/system32" "wcp_root/syswow64"
-              tar -xzvf dxvk.tar.gz -C "temp_$VER"
-              
-              cp -r $(find "temp_$VER" -type d -name "x64" | head -n 1)/. "wcp_root/system32/" 2>/dev/null || true
-              cp -r $(find "temp_$VER" -type d -name "x32" | head -n 1)/. "wcp_root/syswow64/" 2>/dev/null || true
-
-              cat <<EOF > "wcp_root/profile.json"
+            sed -i 's/device->features().robustness2/true/g' src/dxvk/dxvk_device.cpp 2>/dev/null || true
+            sed -i 's/features.robustness2/true/g' src/dxvk/dxvk_device.cpp 2>/dev/null || true
+            sed -i '/VK_EXT_ROBUSTNESS_2_EXTENSION_NAME/d' src/dxvk/dxvk_extensions.cpp 2>/dev/null || true
+            sed -i '/VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME/d' src/dxvk/dxvk_extensions.cpp 2>/dev/null || true
+            sed -i 's/D3D_FEATURE_LEVEL_11_1/D3D_FEATURE_LEVEL_10_1/g' src/d3d11/d3d11_device.cpp 2>/dev/null || true
+            sed -i 's/D3D_FEATURE_LEVEL_11_0/D3D_FEATURE_LEVEL_10_1/g' src/d3d11/d3d11_device.cpp 2>/dev/null || true
+            
+            ./package-release.sh master "../build_$VER" --no-package
+            cd ..
+            
+            mkdir -p "wcp_$VER/system32" "wcp_$VER/syswow64"
+            cp -r "build_$VER/dxvk-master/x64/." "wcp_$VER/system32/"
+            cp -r "build_$VER/dxvk-master/x32/." "wcp_$VER/syswow64/"
+            
+            cat <<EOF > "wcp_$VER/profile.json"
           {
             "type": "DXVK",
-            "versionName": "DXVK-$VER",
+            "versionName": "DXVK-$VER-Patched",
             "versionCode": ${VER//./},
-            "description": "DXVK $VER for Bionic/Winlator",
+            "description": "Patched: No Robustness2, Force 10_1",
             "files": [
               { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
               { "source": "system32/dxgi.dll", "target": "\${system32}/dxgi.dll" },
@@ -48,21 +50,17 @@ jobs:
             ]
           }
           EOF
-
-              tar -cJf "DXVK 1.0-2.4/DXVK-$VER.wcp.xz" -C "wcp_root" .
-              
-              rm -rf "temp_$VER" "wcp_root" dxvk.tar.gz
-            else
-              echo "Skipping $VER (Download failed)"
-            fi
+            
+            tar -cJf "DXVK 1.7-1.10.3 Patched/DXVK-$VER-Patched.wcp.xz" -C "wcp_$VER" .
+            rm -rf "src_$VER" "build_$VER" "wcp_$VER"
           done
 
-      - name: Compress Ultra Zip
+      - name: Compress
         run: |
-          zip -9 -r "alot of dxvk versions.zip" "DXVK 1.0-2.4/"
+          zip -9 -r "patched_dxvk_versions.zip" "DXVK 1.7-1.10.3 Patched/"
 
-      - name: Upload Artifact
+      - name: Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DXVK-Collection-Ultra
-          path: alot of dxvk versions.zip
+          name: Patched-DXVK-Mali
+          path: patched_dxvk_versions.zip
