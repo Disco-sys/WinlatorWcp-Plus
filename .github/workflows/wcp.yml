@@ -1,39 +1,53 @@
-name: Build DXVK Legacy 0.20
+name: Build Alot of DXVK Versions
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-legacy:
+  bundle-dxvk:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download DXVK 0.20
+      - name: Process All Versions
         run: |
-          curl -L -o dxvk_0.20.tar.gz "https://github.com/doitsujin/dxvk/releases/download/v0.20/dxvk-0.20.tar.gz"
+          # Define the version list based on the requested pages
+          VERSIONS=(
+            "2.3" "2.2" "2.1" "2.0" 
+            "1.10.3" "1.10.2" "1.10.1" "1.10" 
+            "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9" 
+            "1.8.1" "1.8" "1.7.3" "1.7.2" "1.7.1" "1.7"
+            "1.6.1" "1.6" "1.5.5" "1.5.4" "1.5.1" "1.5"
+            "1.4.6" "1.4.5" "1.4.4" "1.3.4" "1.2.3" "1.1.1" "1.0.3"
+            "0.96" "0.95" "0.94" "0.93" "0.92" "0.91" "0.90"
+            "0.81" "0.80" "0.72" "0.71" "0.70" "0.61" "0.54"
+            "0.42" "0.31" "0.3"
+          )
 
-      - name: Extract and Map
-        run: |
-          mkdir -p temp workspace/system32 workspace/syswow64
-          tar -xzvf dxvk_0.20.tar.gz -C temp
+          mkdir -p final_zip
           
-          cp -r $(find temp -type d -name "x64" | head -n 1)/. workspace/system32/
-          cp -r $(find temp -type d -name "x32" | head -n 1)/. workspace/syswow64/
-          
-          cat <<EOF > workspace/profile.json
+          for VER in "${VERSIONS[@]}"; do
+            echo "Processing DXVK $VER..."
+            URL="https://github.com/doitsujin/dxvk/releases/download/v${VER}/dxvk-${VER}.tar.gz"
+            
+            # Download and suppress errors if version tag is slightly different
+            curl -L -o "dxvk.tar.gz" "$URL" || continue
+            
+            mkdir -p "temp_$VER" "wcp_$VER/system32" "wcp_$VER/syswow64"
+            tar -xzvf dxvk.tar.gz -C "temp_$VER" || continue
+
+            # Map x64 to system32 and x32 to syswow64
+            cp -r $(find "temp_$VER" -type d -name "x64" | head -n 1)/. "wcp_$VER/system32/" 2>/dev/null || true
+            cp -r $(find "temp_$VER" -type d -name "x32" | head -n 1)/. "wcp_$VER/syswow64/" 2>/dev/null || true
+
+            # Generate profile.json for Winlator
+            cat <<EOF > "wcp_$VER/profile.json"
           {
             "type": "DXVK",
-            "versionName": "DXVK-0.20-Legacy",
-            "versionCode": 20,
-            "description": "Legacy DXVK 0.20 for Mali Testing",
+            "versionName": "DXVK-$VER-Legacy",
+            "versionCode": ${VER//./},
+            "description": "Original DXVK $VER",
             "files": [
               { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
               { "source": "system32/dxgi.dll", "target": "\${system32}/dxgi.dll" },
@@ -43,12 +57,19 @@ jobs:
           }
           EOF
 
-      - name: Create WCP
-        run: |
-          tar -cJf DXVK-0.20-Legacy.wcp.xz -C workspace .
+            # Package into .wcp.xz
+            tar -cJf "final_zip/DXVK-$VER.wcp.xz" -C "wcp_$VER" .
+            
+            # Cleanup for next version
+            rm -rf "temp_$VER" "wcp_$VER" dxvk.tar.gz
+          done
 
-      - name: Deploy Artifact
+      - name: Create Final Zip
+        run: |
+          zip -r "alot_of_dxvk_versions.zip" final_zip/
+
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: DXVK-0.20-Legacy-Package
-          path: DXVK-0.20-Legacy.wcp.xz
+          name: alot-of-dxvk-versions
+          path: alot_of_dxvk_versions.zip
