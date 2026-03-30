@@ -1,4 +1,4 @@
-name: 1.10.3 Modded
+name: 1.5.5 Async Only
 
 on:
   push:
@@ -11,35 +11,30 @@ jobs:
     steps:
     - name: Fetch and Extract Source
       run: |
-        curl -L -o v1.10.3.zip https://github.com/doitsujin/dxvk/archive/refs/tags/v1.10.3.zip
-        unzip v1.10.3.zip
-        mv dxvk-1.10.3/* .
+        curl -L -o v1.5.5.zip https://github.com/doitsujin/dxvk/archive/refs/tags/v1.5.5.zip
+        unzip v1.5.5.zip
+        mv dxvk-1.5.5/* .
         git config --global user.email "bot@example.com"
         git config --global user.name "Bot"
         git init
         git add .
         git commit -m "init"
 
-    - name: Professional Patching
+    - name: Apply Async & GCC 15 Fixes
       run: |
-        # 1. Create a global fix header for GCC 15 compatibility
-        # This includes basic types that GCC 15 is strict about
+        # 1. Professional GCC 15 Compatibility Fix
         echo "#include <cstdint>" > gcc15_fix.h
         echo "#include <cstddef>" >> gcc15_fix.h
+        sed -i "s|cpp_std=c++17|cpp_std=c++17', 'cpp_args=-I. -include gcc15_fix.h', 'c_args=-I. -include gcc15_fix.h|g" meson.build
 
-        # 2. Inject this header into the Meson build configuration
-        # Using '|' as a delimiter to avoid path errors with '/'
-        # We append the flags to the project definition in meson.build
-        sed -i "s|cpp_std=c++17|cpp_std=c++17', 'cpp_args=-include $(pwd)/gcc15_fix.h', 'c_args=-include $(pwd)/gcc15_fix.h|g" meson.build
+        # 2. Inject Async Configuration Option
+        # This adds 'dxvk.enableAsync' to the config health check
+        sed -i '/useRawSsbo/a \      this->enableAsync = config.getOption<bool>("dxvk.enableAsync", false);' src/dxvk/dxvk_options.cpp
+        sed -i '/useRawSsbo/a \    bool enableAsync;' src/dxvk/dxvk_options.h
 
-        # 3. Apply Functional Mods (Robustness removal for Mali-G52)
-        sed -i 's/m_features.extRobustness2.robustness2/true/g' src/dxvk/dxvk_device.cpp
-        sed -i 's/m_features.extRobustness2.nullDescriptor/true/g' src/dxvk/dxvk_device.cpp
-        sed -i 's/m_features.extRobustness2.robustBufferAccess2/true/g' src/dxvk/dxvk_device.cpp
-        sed -i '/VK_EXT_ROBUSTNESS_2_EXTENSION_NAME/d' src/dxvk/dxvk_extensions.cpp
-        sed -i '/VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME/d' src/dxvk/dxvk_extensions.cpp
-        sed -i 's/D3D_FEATURE_LEVEL_11_0/D3D_FEATURE_LEVEL_11_1/g' src/d3d11/d3d11_device.cpp
-        sed -i 's/m_features.core.features.geometryShader/true/g' src/dxvk/dxvk_device.cpp
+        # 3. Patch Pipeline Compiler (The Core Async Logic)
+        # We modify the compiler to check our new enableAsync flag
+        sed -i 's/if (m_program->getShader(stage) != nullptr)/if (!m_device->config().enableAsync \&\& m_program->getShader(stage) != nullptr)/g' src/dxvk/dxvk_pipeline.cpp
 
     - name: Build with Arch-MinGW
       id: build-release
@@ -56,9 +51,9 @@ jobs:
         cat <<EOF > out/profile.json
         {
           "type": "DXVK",
-          "versionName": "1.10.3 Modded",
-          "versionCode": 1103,
-          "description": "1.10.3 optimized for MediaTek Helio G85 / Mali-G52",
+          "versionName": "1.5.5 Async",
+          "versionCode": 1550,
+          "description": "DXVK 1.5.5 with Async Shader Compilation",
           "files": [
             { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
             { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
@@ -71,10 +66,10 @@ jobs:
           ]
         }
         EOF
-        tar -cJf "1.10.3-Modded.wcp.xz" -C out .
+        tar -cJf "1.5.5-Async.wcp.xz" -C out .
 
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: 1.10.3-Modded
-        path: "1.10.3-Modded.wcp.xz"
+        name: 1.5.5-Async
+        path: "1.5.5-Async.wcp.xz"
