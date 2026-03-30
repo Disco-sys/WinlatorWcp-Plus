@@ -9,12 +9,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup Env
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y meson ninja-build mingw-w64 glslang-tools python3-pip
-        pip3 install mako
-
     - name: Fetch and Extract Source
       run: |
         curl -L -o dxvk-1.10.3.tar.gz https://github.com/doitsujin/dxvk/releases/download/v1.10.3/dxvk-1.10.3.tar.gz
@@ -38,7 +32,7 @@ jobs:
         sed -i 's/D3D_FEATURE_LEVEL_11_0/D3D_FEATURE_LEVEL_11_1/g' src/d3d11/d3d11_device.cpp
         sed -i 's/m_features.core.features.geometryShader/true/g' src/dxvk/dxvk_device.cpp
 
-    - name: Build release
+    - name: Build with Arch-MinGW
       id: build-release
       uses: Joshua-Ashton/arch-mingw-github-action@v8
       with:
@@ -69,11 +63,10 @@ jobs:
           ]
         }
         EOF
-        tar -cJf "1.10.3 Modded.wcp.xz" -C out .
+        tar -cJf "1.10.3-Modded.wcp.xz" -C out .
 
-    - name: Upload artifacts
-      id: upload-artifacts
+    - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: 1.10.3-Modded
-        path: "1.10.3 Modded.wcp.xz"
+        path: "1.10.3-Modded.wcp.xz"
