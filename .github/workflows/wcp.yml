@@ -22,10 +22,14 @@ jobs:
 
     - name: Patch
       run: |
-        # --- HEADER FIX (Fixes the uint32_t errors) ---
+        # --- HEADER FIX (Fixes GCC 15 uint32_t / uint64_t errors) ---
+        # We must add <cstdint> to the headers so they are available everywhere
         sed -i '1i #include <cstdint>' src/util/util_bit.h
         sed -i '1i #include <cstdint>' src/util/util_math.h
-        sed -i '1i #include <cstdint>' src/util/util_matrix.cpp
+        sed -i '1i #include <cstdint>' src/util/util_vector.h
+        sed -i '1i #include <cstdint>' src/util/util_matrix.h
+        sed -i '1i #include <cstdint>' src/util/util_string.h
+        sed -i '1i #include <cstdint>' src/util/util_flags.h
 
         # --- MODS (Robustness removal) ---
         sed -i 's/m_features.extRobustness2.robustness2/true/g' src/dxvk/dxvk_device.cpp
@@ -53,7 +57,7 @@ jobs:
           "type": "DXVK",
           "versionName": "1.10.3 Modded",
           "versionCode": 1103,
-          "description": "1.10.3 Modded",
+          "description": "1.10.3 Modded for Mali-G52",
           "files": [
             { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
             { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
