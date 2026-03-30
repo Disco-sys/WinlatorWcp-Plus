@@ -1,68 +1,75 @@
-name: Build DXVK Collection 1.0 to 2.4
+name: 1.10.3 Modded
 
 on:
+  push:
+    branches: []
   workflow_dispatch:
 
 jobs:
-  bundle-dxvk-ultra:
-    runs-on: ubuntu-latest
+  build-artifacts:
+    runs-on: ubuntu-20.04
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout code
+      id: checkout-code
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        fetch-depth: 0
 
-      - name: Process DXVK Versions
-        run: |
-          VERSIONS=(
-            "2.4" "2.3.1" "2.3" "2.2" "2.1" "2.0"
-            "1.10.3" "1.10.2" "1.10.1" "1.10"
-            "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9"
-            "1.8.1" "1.8" "1.7.3" "1.7.2" "1.7.1" "1.7"
-            "1.6.1" "1.6" "1.5.5" "1.5.4" "1.5.1" "1.5"
-            "1.4.6" "1.4.5" "1.4.4" "1.3.4" "1.2.3" "1.1.1" "1.0.3" "1.0.2" "1.0.1" "1.0"
-          )
+    - name: Setup Identity
+      run: |
+        git config --global user.email "bot@example.com"
+        git config --global user.name "Bot"
 
-          mkdir -p "DXVK 1.0-2.4"
-          
-          for VER in "${VERSIONS[@]}"; do
-            echo "Building DXVK $VER..."
-            URL="https://github.com/doitsujin/dxvk/releases/download/v${VER}/dxvk-${VER}.tar.gz"
-            
-            if curl -L --fail -o "dxvk.tar.gz" "$URL"; then
-              mkdir -p "temp_$VER" "wcp_root/system32" "wcp_root/syswow64"
-              tar -xzvf dxvk.tar.gz -C "temp_$VER"
-              
-              cp -r $(find "temp_$VER" -type d -name "x64" | head -n 1)/. "wcp_root/system32/" 2>/dev/null || true
-              cp -r $(find "temp_$VER" -type d -name "x32" | head -n 1)/. "wcp_root/syswow64/" 2>/dev/null || true
+    - name: Patch
+      run: |
+        sed -i 's/m_features.extRobustness2.robustness2/true/g' src/dxvk/dxvk_device.cpp
+        sed -i 's/m_features.extRobustness2.nullDescriptor/true/g' src/dxvk/dxvk_device.cpp
+        sed -i 's/m_features.extRobustness2.robustBufferAccess2/true/g' src/dxvk/dxvk_device.cpp
+        sed -i '/VK_EXT_ROBUSTNESS_2_EXTENSION_NAME/d' src/dxvk/dxvk_extensions.cpp
+        sed -i '/VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME/d' src/dxvk/dxvk_extensions.cpp
+        sed -i 's/D3D_FEATURE_LEVEL_11_0/D3D_FEATURE_LEVEL_11_1/g' src/d3d11/d3d11_device.cpp
+        sed -i 's/m_features.core.features.geometryShader/true/g' src/dxvk/dxvk_device.cpp
 
-              cat <<EOF > "wcp_root/profile.json"
-          {
-            "type": "DXVK",
-            "versionName": "DXVK-$VER",
-            "versionCode": ${VER//./},
-            "description": "DXVK $VER for Bionic/Winlator",
-            "files": [
-              { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
-              { "source": "system32/dxgi.dll", "target": "\${system32}/dxgi.dll" },
-              { "source": "syswow64/d3d11.dll", "target": "\${syswow64}/d3d11.dll" },
-              { "source": "syswow64/dxgi.dll", "target": "\${syswow64}/dxgi.dll" }
-            ]
-          }
-          EOF
+    - name: Setup problem matcher
+      uses: Joshua-Ashton/gcc-problem-matcher@v1
 
-              tar -cJf "DXVK 1.0-2.4/DXVK-$VER.wcp.xz" -C "wcp_root" .
-              
-              rm -rf "temp_$VER" "wcp_root" dxvk.tar.gz
-            else
-              echo "Skipping $VER (Download failed)"
-            fi
-          done
+    - name: Build release
+      id: build-release
+      uses: Joshua-Ashton/arch-mingw-github-action@v8
+      with:
+        command: |
+          ./package-release.sh master build --no-package
 
-      - name: Compress Ultra Zip
-        run: |
-          zip -9 -r "alot of dxvk versions.zip" "DXVK 1.0-2.4/"
+    - name: Create WCP
+      run: |
+        mkdir -p out/system32 out/syswow64
+        cp -r build/dxvk-master/x64/. out/system32/
+        cp -r build/dxvk-master/x32/. out/syswow64/
+        cat <<EOF > out/profile.json
+        {
+          "type": "DXVK",
+          "versionName": "1.10.3 Modded",
+          "versionCode": 1103,
+          "description": "1.10.3 Modded",
+          "files": [
+            { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
+            { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
+            { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
+            { "source": "system32/dxgi.dll", "target": "\${system32}/dxgi.dll" },
+            { "source": "syswow64/d3d11.dll", "target": "\${syswow64}/d3d11.dll" },
+            { "source": "syswow64/d3d10core.dll", "target": "\${syswow64}/d3d10core.dll" },
+            { "source": "syswow64/d3d9.dll", "target": "\${syswow64}/d3d9.dll" },
+            { "source": "syswow64/dxgi.dll", "target": "\${syswow64}/dxgi.dll" }
+          ]
+        }
+        EOF
+        tar -cJf "1.10.3 Modded.wcp.xz" -C out .
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: DXVK-Collection-Ultra
-          path: alot of dxvk versions.zip
+    - name: Upload artifacts
+      id: upload-artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: 1.10.3-Modded
+        path: "1.10.3 Modded.wcp.xz"
