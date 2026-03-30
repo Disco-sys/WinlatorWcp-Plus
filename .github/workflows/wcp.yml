@@ -23,14 +23,16 @@ jobs:
     - name: Professional Patching
       run: |
         # 1. Create a global fix header for GCC 15 compatibility
+        # This includes basic types that GCC 15 is strict about
         echo "#include <cstdint>" > gcc15_fix.h
         echo "#include <cstddef>" >> gcc15_fix.h
 
         # 2. Inject this header into the Meson build configuration
-        # This forces the compiler to read our fix at the start of every file
-        sed -i "s/cpp_std=c++17/cpp_std=c++17', 'cpp_args=-include $(pwd)\/gcc15_fix.h', 'c_args=-include $(pwd)\/gcc15_fix.h/g" meson.build
+        # Using '|' as a delimiter to avoid path errors with '/'
+        # We append the flags to the project definition in meson.build
+        sed -i "s|cpp_std=c++17|cpp_std=c++17', 'cpp_args=-include $(pwd)/gcc15_fix.h', 'c_args=-include $(pwd)/gcc15_fix.h|g" meson.build
 
-        # 3. Apply Functional Mods (Robustness removal)
+        # 3. Apply Functional Mods (Robustness removal for Mali-G52)
         sed -i 's/m_features.extRobustness2.robustness2/true/g' src/dxvk/dxvk_device.cpp
         sed -i 's/m_features.extRobustness2.nullDescriptor/true/g' src/dxvk/dxvk_device.cpp
         sed -i 's/m_features.extRobustness2.robustBufferAccess2/true/g' src/dxvk/dxvk_device.cpp
