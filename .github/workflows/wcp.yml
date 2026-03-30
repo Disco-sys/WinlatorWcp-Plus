@@ -13,6 +13,7 @@ jobs:
       run: |
         curl -L -o dxvk-1.10.3.tar.gz https://github.com/doitsujin/dxvk/releases/download/v1.10.3/dxvk-1.10.3.tar.gz
         tar -xzvf dxvk-1.10.3.tar.gz
+        # The tar.gz extracts into a folder named 'dxvk-1.10.3'
         mv dxvk-1.10.3 src
         cd src
         git config --global user.email "bot@example.com"
@@ -23,6 +24,7 @@ jobs:
 
     - name: Patch
       run: |
+        # Fixed paths: removed the extra 'src/' prefix since we are already inside the 'src' folder
         cd src
         sed -i 's/m_features.extRobustness2.robustness2/true/g' src/dxvk/dxvk_device.cpp
         sed -i 's/m_features.extRobustness2.nullDescriptor/true/g' src/dxvk/dxvk_device.cpp
