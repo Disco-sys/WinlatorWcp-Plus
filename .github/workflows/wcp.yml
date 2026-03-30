@@ -9,20 +9,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      id: checkout-code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        fetch-depth: 0
-
-    - name: Setup Identity
+    - name: Setup Env
       run: |
+        sudo apt-get update
+        sudo apt-get install -y meson ninja-build mingw-w64 glslang-tools python3-pip
+        pip3 install mako
+
+    - name: Fetch and Extract Source
+      run: |
+        curl -L -o dxvk-1.10.3.tar.gz https://github.com/doitsujin/dxvk/releases/download/v1.10.3/dxvk-1.10.3.tar.gz
+        tar -xzvf dxvk-1.10.3.tar.gz
+        mv dxvk-1.10.3 src
+        cd src
         git config --global user.email "bot@example.com"
         git config --global user.name "Bot"
+        git init
+        git add .
+        git commit -m "init"
 
     - name: Patch
       run: |
+        cd src
         sed -i 's/m_features.extRobustness2.robustness2/true/g' src/dxvk/dxvk_device.cpp
         sed -i 's/m_features.extRobustness2.nullDescriptor/true/g' src/dxvk/dxvk_device.cpp
         sed -i 's/m_features.extRobustness2.robustBufferAccess2/true/g' src/dxvk/dxvk_device.cpp
@@ -31,15 +38,13 @@ jobs:
         sed -i 's/D3D_FEATURE_LEVEL_11_0/D3D_FEATURE_LEVEL_11_1/g' src/d3d11/d3d11_device.cpp
         sed -i 's/m_features.core.features.geometryShader/true/g' src/dxvk/dxvk_device.cpp
 
-    - name: Setup problem matcher
-      uses: Joshua-Ashton/gcc-problem-matcher@v1
-
     - name: Build release
       id: build-release
       uses: Joshua-Ashton/arch-mingw-github-action@v8
       with:
         command: |
-          ./package-release.sh master build --no-package
+          cd src
+          ./package-release.sh master ../build --no-package
 
     - name: Create WCP
       run: |
