@@ -20,18 +20,17 @@ jobs:
         git add .
         git commit -m "init"
 
-    - name: Patch
+    - name: Professional Patching
       run: |
-        # --- HEADER FIX (Fixes GCC 15 uint32_t / uint64_t errors) ---
-        # We must add <cstdint> to the headers so they are available everywhere
-        sed -i '1i #include <cstdint>' src/util/util_bit.h
-        sed -i '1i #include <cstdint>' src/util/util_math.h
-        sed -i '1i #include <cstdint>' src/util/util_vector.h
-        sed -i '1i #include <cstdint>' src/util/util_matrix.h
-        sed -i '1i #include <cstdint>' src/util/util_string.h
-        sed -i '1i #include <cstdint>' src/util/util_flags.h
+        # 1. Create a global fix header for GCC 15 compatibility
+        echo "#include <cstdint>" > gcc15_fix.h
+        echo "#include <cstddef>" >> gcc15_fix.h
 
-        # --- MODS (Robustness removal) ---
+        # 2. Inject this header into the Meson build configuration
+        # This forces the compiler to read our fix at the start of every file
+        sed -i "s/cpp_std=c++17/cpp_std=c++17', 'cpp_args=-include $(pwd)\/gcc15_fix.h', 'c_args=-include $(pwd)\/gcc15_fix.h/g" meson.build
+
+        # 3. Apply Functional Mods (Robustness removal)
         sed -i 's/m_features.extRobustness2.robustness2/true/g' src/dxvk/dxvk_device.cpp
         sed -i 's/m_features.extRobustness2.nullDescriptor/true/g' src/dxvk/dxvk_device.cpp
         sed -i 's/m_features.extRobustness2.robustBufferAccess2/true/g' src/dxvk/dxvk_device.cpp
@@ -57,7 +56,7 @@ jobs:
           "type": "DXVK",
           "versionName": "1.10.3 Modded",
           "versionCode": 1103,
-          "description": "1.10.3 Modded for Mali-G52",
+          "description": "1.10.3 optimized for MediaTek Helio G85 / Mali-G52",
           "files": [
             { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
             { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
