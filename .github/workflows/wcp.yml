@@ -23,6 +23,9 @@ jobs:
       run: |
         mkdir wine_temp
         tar -xf wine-11.5.tar.xz -C wine_temp --strip-components=1
+        rm -rf wine_temp/bin/*
+        rm -rf wine_temp/share/man
+        rm -rf wine_temp/share/applications
 
     - name: Extract and Prepare Proton Base
       run: |
@@ -55,7 +58,6 @@ jobs:
     - name: Archive WCP
       run: |
         cd final_structure
-        # Using -T0 for multi-core and -1 for fast compression to prevent hanging
         tar -cf - . | xz -T0 -1 > "../wine-11.5-hybrid.wcp.xz"
 
     - name: Upload Artifact
