@@ -55,7 +55,8 @@ jobs:
     - name: Archive WCP
       run: |
         cd final_structure
-        tar -cJf "../wine-11.5-hybrid.wcp.xz" .
+        # Using -T0 for multi-core and -1 for fast compression to prevent hanging
+        tar -cf - . | xz -T0 -1 > "../wine-11.5-hybrid.wcp.xz"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
