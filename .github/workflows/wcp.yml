@@ -1,75 +1,64 @@
-name: 1.5.5 Async Only
+name: Wine 11.5 WCP Creator
 
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  build-artifacts:
+  build-wcp:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Fetch and Extract Source
+    - name: Setup Environment
       run: |
-        curl -L -o v1.5.5.zip https://github.com/doitsujin/dxvk/archive/refs/tags/v1.5.5.zip
-        unzip v1.5.5.zip
-        mv dxvk-1.5.5/* .
-        git config --global user.email "bot@example.com"
-        git config --global user.name "Bot"
-        git init
-        git add .
-        git commit -m "init"
+        sudo apt-get update
+        sudo apt-get install -y xz-utils jq tar
 
-    - name: Apply Async & GCC 15 Fixes
+    - name: Download Sources
       run: |
-        # 1. Professional GCC 15 Compatibility Fix
-        echo "#include <cstdint>" > gcc15_fix.h
-        echo "#include <cstddef>" >> gcc15_fix.h
-        sed -i "s|cpp_std=c++17|cpp_std=c++17', 'cpp_args=-I. -include gcc15_fix.h', 'c_args=-I. -include gcc15_fix.h|g" meson.build
+        curl -L -o wine-11.5.tar.xz https://github.com/Kron4ek/Wine-Builds/releases/download/11.5/wine-11.5-amd64.tar.xz
+        curl -L -o proton-base.wcp.xz https://github.com/StevenMXZ/Contents-Cmod/releases/download/1.2.0/proton-10-arm64ec.wcp.xz
 
-        # 2. Inject Async Configuration Option
-        # This adds 'dxvk.enableAsync' to the config health check
-        sed -i '/useRawSsbo/a \      this->enableAsync = config.getOption<bool>("dxvk.enableAsync", false);' src/dxvk/dxvk_options.cpp
-        sed -i '/useRawSsbo/a \    bool enableAsync;' src/dxvk/dxvk_options.h
-
-        # 3. Patch Pipeline Compiler (The Core Async Logic)
-        # We modify the compiler to check our new enableAsync flag
-        sed -i 's/if (m_program->getShader(stage) != nullptr)/if (!m_device->config().enableAsync \&\& m_program->getShader(stage) != nullptr)/g' src/dxvk/dxvk_pipeline.cpp
-
-    - name: Build with Arch-MinGW
-      id: build-release
-      uses: Joshua-Ashton/arch-mingw-github-action@v8
-      with:
-        command: |
-          ./package-release.sh master build --no-package
-
-    - name: Create WCP
+    - name: Extract Wine 11.5
       run: |
-        mkdir -p out/system32 out/syswow64
-        cp -r build/dxvk-master/x64/. out/system32/
-        cp -r build/dxvk-master/x32/. out/syswow64/
-        cat <<EOF > out/profile.json
-        {
-          "type": "DXVK",
-          "versionName": "1.5.5 Async",
-          "versionCode": 1550,
-          "description": "DXVK 1.5.5 with Async Shader Compilation",
-          "files": [
-            { "source": "system32/d3d11.dll", "target": "\${system32}/d3d11.dll" },
-            { "source": "system32/d3d10core.dll", "target": "\${system32}/d3d10core.dll" },
-            { "source": "system32/d3d9.dll", "target": "\${system32}/d3d9.dll" },
-            { "source": "system32/dxgi.dll", "target": "\${system32}/dxgi.dll" },
-            { "source": "syswow64/d3d11.dll", "target": "\${syswow64}/d3d11.dll" },
-            { "source": "syswow64/d3d10core.dll", "target": "\${syswow64}/d3d10core.dll" },
-            { "source": "syswow64/d3d9.dll", "target": "\${syswow64}/d3d9.dll" },
-            { "source": "syswow64/dxgi.dll", "target": "\${syswow64}/dxgi.dll" }
-          ]
-        }
-        EOF
-        tar -cJf "1.5.5-Async.wcp.xz" -C out .
+        mkdir wine_temp
+        tar -xf wine-11.5.tar.xz -C wine_temp --strip-components=1
 
-    - name: Upload
+    - name: Extract and Prepare Proton Base
+      run: |
+        mkdir proton_raw
+        xz -d -c proton-base.wcp.xz | tar -x -C proton_raw || true
+        
+        mkdir final_structure
+        if [ -d "proton_raw/." ]; then
+          cp -r proton_raw/. final_structure/
+        else
+          cp -r proton_raw/* final_structure/ 2>/dev/null || cp -r proton_raw final_structure/
+        fi
+
+    - name: Overlay Wine and Patch JSON
+      run: |
+        cp -rf wine_temp/bin/* final_structure/bin/ 2>/dev/null || cp -rf wine_temp/bin final_structure/
+        cp -rf wine_temp/lib/* final_structure/lib/ 2>/dev/null || cp -rf wine_temp/lib final_structure/
+        cp -rf wine_temp/share/* final_structure/share/ 2>/dev/null || cp -rf wine_temp/share final_structure/
+
+        if [ -f final_structure/profile.json ]; then
+          jq '.type = "WINE" | 
+              .versionName = "Wine 11.5" | 
+              .versionCode = 1105 | 
+              .description = "Wine 11.5 Hybrid Build"' \
+              final_structure/profile.json > final_structure/profile.json.tmp && mv final_structure/profile.json.tmp final_structure/profile.json
+        else
+          echo '{"type":"WINE","versionName":"Wine 11.5","versionCode":1105,"description":"Wine 11.5 Hybrid"}' > final_structure/profile.json
+        fi
+
+    - name: Archive WCP
+      run: |
+        cd final_structure
+        tar -cJf "../wine-11.5-hybrid.wcp.xz" .
+
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: 1.5.5-Async
-        path: "1.5.5-Async.wcp.xz"
+        name: Wine-11.5-Hybrid
+        path: wine-11.5-hybrid.wcp.xz
