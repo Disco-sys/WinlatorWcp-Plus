@@ -26,6 +26,7 @@ jobs:
         rm -rf wine_temp/bin/*
         rm -rf wine_temp/share/man
         rm -rf wine_temp/share/applications
+        rm -rf wine_temp/lib/wine/*
 
     - name: Extract and Prepare Proton Base
       run: |
